@@ -5,18 +5,31 @@ from .control import Motion,Hazard,elapsed
 
 class Peer:
     def __init__(self,uart,session):
-        self.uart=uart;self.session=session;self.seq=0;self.parser=FrameParser();self.receiver=Receiver();self.last_rx=None;self.last_tx=None;self.pending=None;self.offset=0
+        self.uart=uart;self.session=session;self.seq=0;self.parser=FrameParser();self.receiver=Receiver()
+        self.last_rx=None;self.now=0;self.last_hello=None;self.pending=None;self.offset=0;self.pending_kind=None;self.pending_at=0
     def send(self,kind,data):
-        # Only one bounded transmit buffer. Skip telemetry when serial is blocked.
+        prefix=b''
+        priority=kind=='stop' or (kind=='drive' and data.get('throttle')==0 and data.get('steering')==0)
+        replace_telemetry=kind in ('arm','drive','inspect','reset') and self.pending_kind in ('hello','telemetry','ack')
+        if (priority or replace_telemetry) and self.pending is not None:
+            # Abort a partially sent JSON frame before the priority stop frame.
+            if self.offset:prefix=b'\n'
+            self.pending=None;self.offset=0
         if self.pending is not None:return False
-        self.pending=encode(dict(v=1,kind=kind,session=self.session,seq=self.seq,data=data));self.offset=0;self.seq+=1
+        if kind=='telemetry' and (self.last_hello is None or elapsed(self.now,self.last_hello)>=1000):kind='hello';data={}
+        if kind=='hello':self.last_hello=self.now
+        self.pending=prefix+encode(dict(v=1,kind=kind,session=self.session,seq=self.seq,data=data));self.offset=0
+        self.pending_kind=kind;self.pending_at=self.now;self.seq+=1
         return True
     def flush(self):
         if self.pending is not None:
+            if self.pending_kind in ('arm','drive','inspect','reset') and elapsed(self.now,self.pending_at)>=200:
+                # Never allow a delayed command to become fresh motion at the receiver.
+                self.pending=b'\n' if self.offset else b'';self.offset=0;self.pending_kind='discard'
             n=self.uart.write(self.pending[self.offset:]) or 0;self.offset+=n
             if self.offset>=len(self.pending):self.pending=None
     def poll(self,now):
-        self.flush();data=self.uart.read(256) or b'';out=[]
+        self.now=now;self.flush();data=self.uart.read(256) or b'';out=[]
         for frame in self.parser.feed(data):
             if self.receiver.accept(frame):
                 self.last_rx=now;out.append((frame,self.receiver.changed))

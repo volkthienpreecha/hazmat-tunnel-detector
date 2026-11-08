@@ -11,7 +11,7 @@ class HttpTests(unittest.TestCase):
         from firmware.shared.runtime import Peer
         a,b=Wire.pair();g=Gateway({'operator_token':'test-token','gas_warmup_ms':0},SimHardware(),Peer(a,'gateway'),simulation=True)
         self.assertEqual(g.command(0,{},'arm',{}).get('error'),'unauthorized')
-        headers={'x-operator-token':'test-token','x-operator-session':'one'}
+        headers={'x-operator-token':'test-token','x-operator-session':'one','x-command-seq':'0'}
         # No telemetry means arming is refused before any UART command can be sent.
         self.assertIn('error',g.command(0,headers,'arm',{}))
         self.assertIn('error',g.command(0,headers,'drive',{'throttle':True,'steering':0}))
@@ -19,10 +19,10 @@ class HttpTests(unittest.TestCase):
         from simulator.server import Simulation
         sim=Simulation()
         for t in range(0,1500,50):sim.step(t)
-        h={'x-operator-token':'demo-token','x-operator-session':'one'}
+        h={'x-operator-token':'demo-token','x-operator-session':'one','x-command-seq':'0'}
         self.assertNotIn('error',sim.gateway.command(1500,h,'arm',{}))
         for t in range(1500,1800,50):sim.step(t)
-        sim.gateway.command(1800,h,'inspect',{})
+        h['x-command-seq']='1';sim.gateway.command(1800,h,'inspect',{})
         for t in range(1800,2100,50):sim.step(t)
         self.assertGreater(sim.motion.throttle,0)
         sim.hardware.scenario='gas'

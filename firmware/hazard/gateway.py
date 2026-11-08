@@ -9,7 +9,7 @@ class Gateway:
         self.config=config;self.hardware=hardware;self.peer=peer;self.simulation=simulation
         self.hazard=Hazard(warmup_ms=config.get('gas_warmup_ms',60000));self.now=0
         self.sensors={};self.motion={'armed':False,'latched':False,'throttle':0,'steering':0,'phase':'idle','reason':'awaiting motion board'}
-        self.motion_at=None;self.last_sample=None;self.last_send=None;self.owner=None;self.owner_at=None;self.events=[];self.event_seq=0;self.previous=None;self.last_ack=None
+        self.motion_at=None;self.last_sample=None;self.last_send=None;self.owner=None;self.owner_at=None;self.events=[];self.event_seq=0;self.previous=None;self.last_ack=None;self.command_sequences={}
     def event(self,text):
         self.event_seq+=1;self.events.append(dict(id=self.event_seq,ms=self.now,text=text))
         if len(self.events)>40:self.events.pop(0)
@@ -38,6 +38,11 @@ class Gateway:
         if headers.get('x-operator-token')!=self.config['operator_token']:return {'error':'unauthorized'}
         session=headers.get('x-operator-session','')
         if not isinstance(session,str) or not 1<=len(session)<=64:return {'error':'operator session required'}
+        try:seq=int(headers.get('x-command-seq',''))
+        except (ValueError,TypeError):return {'error':'command sequence required'}
+        if not 0<=seq<2147483647 or seq<=self.command_sequences.get(session,-1):return {'error':'stale command sequence'}
+        if session not in self.command_sequences and len(self.command_sequences)>=8:return {'error':'operator session limit; restart gateway'}
+        self.command_sequences[session]=seq
         if action not in ('arm','drive','inspect','stop','reset'):return {'error':'unknown action'}
         if not isinstance(payload,dict):return {'error':'invalid payload'}
         if action=='drive' and (not number(payload.get('throttle'),-.5,.5) or not number(payload.get('steering'),-1,1)):return {'error':'invalid drive'}

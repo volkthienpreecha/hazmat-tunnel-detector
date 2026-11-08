@@ -32,7 +32,8 @@ class Motion:
             self.latched=False;self.halt('reset');return True
         if self.latched:return False
         if action=='arm':
-            if self.fault(now):return False
+            if self.armed or self.fault(now):return False
+            self.manual=(0,0);self.throttle=0;self.steering=0
             self.armed=True;self.phase='manual';self.last_drive=now;self.reason='armed';return True
         if action=='drive':
             if not self.armed or self.phase!='manual' or self.fault(now):return False
