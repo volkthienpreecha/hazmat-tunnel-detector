@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.superpowers/
+.env
+config.local.json
+node_modules/
+artifacts/
+.DS_Store
