@@ -1,0 +1,25 @@
+{
+  "role": "motion",
+  "hardware_confirmed": false,
+  "allow_clear_path_retreat": false,
+  "temperature_model": "UNCONFIRMED",
+  "gas_warmup_ms": 60000,
+  "gas_adc_scale": 1,
+  "shunt_ohms": 0.1,
+  "imu_address": 106,
+  "power_address": 64,
+  "servo_center_us": 1500,
+  "servo_span_us": 400,
+  "ap_ssid": "Hazmat-Rover",
+  "ap_password": "CHANGE-ME",
+  "operator_token": "CHANGE-ME",
+  "pins": {
+    "uart_tx": null, "uart_rx": null,
+    "sda": null, "scl": null, "i2c_power": null,
+    "motor_left_pwm": null, "motor_left_a": null, "motor_left_b": null,
+    "motor_right_pwm": null, "motor_right_a": null, "motor_right_b": null,
+    "servo": null, "trig": null, "echo": null,
+    "gas_adc": null, "temp_adc": null, "fan": null
+  },
+  "display": {"enabled": false, "spi_id": 1, "sck": null, "mosi": null, "cs": null, "dc": null, "reset": null, "backlight": null, "power": null, "width": 240, "height": 135, "x_offset": 40, "y_offset": 53, "rotation": 96}
+}
