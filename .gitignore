@@ -6,3 +6,5 @@ config.local.json
 node_modules/
 artifacts/
 .DS_Store
+
+output/
