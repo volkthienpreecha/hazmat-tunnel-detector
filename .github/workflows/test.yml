@@ -1,0 +1,28 @@
+name: Software checks
+on: [push, pull_request]
+jobs:
+  core-and-browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: python -m unittest discover -s tests -v
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          python -m simulator.server > /tmp/hazmat-simulator.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/api/state >/dev/null && break; sleep 1; done
+          npm run test:browser
+      - run: python tools/package_firmware.py motion /tmp/hazmat-motion
+      - run: python tools/package_firmware.py hazard /tmp/hazmat-hazard
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-screenshots
+          path: output/playwright/
