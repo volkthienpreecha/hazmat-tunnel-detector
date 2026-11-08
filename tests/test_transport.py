@@ -41,3 +41,8 @@ class TransportTests(unittest.TestCase):
         from test_core import inputs
         m=Motion();m.heartbeat(0);m.update(0,inputs());m.command(0,'arm',{});m.command(0,'inspect',{})
         self.assertFalse(m.command(1,'arm',{}));self.assertEqual(m.phase,'inspect')
+    def test_armed_stationary_wait_does_not_require_rushed_click(self):
+        from firmware.shared.control import Motion
+        from test_core import inputs
+        m=Motion();m.heartbeat(0);m.update(0,inputs());m.command(0,'arm',{})
+        m.heartbeat(900);m.update(900,inputs());self.assertTrue(m.armed);self.assertEqual(m.throttle,0)

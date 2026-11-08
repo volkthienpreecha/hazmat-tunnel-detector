@@ -34,7 +34,7 @@ class Motion:
         if action=='arm':
             if self.armed or self.fault(now):return False
             self.manual=(0,0);self.throttle=0;self.steering=0
-            self.armed=True;self.phase='manual';self.last_drive=now;self.reason='armed';return True
+            self.armed=True;self.phase='manual';self.last_drive=None;self.reason='armed';return True
         if action=='drive':
             if not self.armed or self.phase!='manual' or self.fault(now):return False
             t=payload.get('throttle');s=payload.get('steering')
@@ -52,7 +52,8 @@ class Motion:
         if fatal:self.halt(fatal);return
         if not self.armed:self.throttle=0;return
         if self.phase=='manual':
-            if self.last_drive is None or elapsed(now,self.last_drive)>=500:self.halt('command expired');return
+            if self.last_drive is None:self.throttle=0;self.steering=0;return
+            if elapsed(now,self.last_drive)>=500:self.halt('command expired');return
             self.throttle,self.steering=self.manual
         elif self.phase=='inspect':
             if inputs['distance_cm']<25:self.halt('obstacle');return
